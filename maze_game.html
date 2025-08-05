@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze Game</title>
+  <style>
+    canvas {
+      border: 2px solid black;
+      display: block;
+      margin: auto;
+    }
+    body {
+      text-align: center;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <h1>Maze Game</h1>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const TILE_SIZE = 40;
+    const MAZE = [
+      "########################",
+      "#     #       #     #  #",
+      "# ### # ##### # ### ## #",
+      "#   #     #   #   #    #",
+      "### ####### ####### ####",
+      "#     #   #       #    #",
+      "# ### # # ####### #### #",
+      "# #   # #     #     #  #",
+      "# # ##### ### # ### ####",
+      "# #     #   # # #      #",
+      "# ##### ### ### ###### #",
+      "#       #     #        #",
+      "########################"
+    ];
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const rows = MAZE.length;
+    const cols = MAZE[0].length;
+    canvas.width = cols * TILE_SIZE;
+    canvas.height = rows * TILE_SIZE;
+
+    let player1 = findOpenCell(false);
+    let player2 = findOpenCell(true);
+    let startTime = Date.now();
+    const TIMER_LIMIT = 40;
+
+    function findOpenCell(reverse) {
+      const rowRange = reverse ? [...Array(rows).keys()].reverse() : [...Array(rows).keys()];
+      const colRange = reverse ? [...Array(cols).keys()].reverse() : [...Array(cols).keys()];
+      for (let r of rowRange) {
+        for (let c of colRange) {
+          if (MAZE[r][c] === ' ') return [r, c];
+        }
+      }
+      return [1, 1];
+    }
+
+    function drawMaze() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          ctx.fillStyle = MAZE[y][x] === '#' ? '#000' : '#fff';
+          ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
+
+    function drawPlayers() {
+      drawCircle(player1, 'red', 'P1');
+      drawCircle(player2, 'blue', 'P2');
+    }
+
+    function drawCircle([r, c], color, label) {
+      ctx.beginPath();
+      ctx.arc(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 2 - 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.fillText(label, c * TILE_SIZE + 5, r * TILE_SIZE - 5);
+    }
+
+    function movePlayer(player, dir) {
+      const dirs = { U: [-1, 0], D: [1, 0], L: [0, -1], R: [0, 1] };
+      const [dy, dx] = dirs[dir];
+      const [ny, nx] = [player[0] + dy, player[1] + dx];
+      if (MAZE[ny]?.[nx] === ' ') {
+        player[0] = ny;
+        player[1] = nx;
+      }
+    }
+
+    function drawTimer() {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, TIMER_LIMIT - elapsed);
+      ctx.fillStyle = '#eee';
+      ctx.fillRect(canvas.width - 180, 5, 170, 30);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(canvas.width - 180, 5, 170, 30);
+      ctx.fillStyle = '#000';
+      ctx.fillText(`Time Left: ${remaining}s`, canvas.width - 170, 25);
+      return remaining;
+    }
+
+    function drawGameOver(text) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(0, canvas.height / 2 - 40, canvas.width, 80);
+      ctx.fillStyle = 'red';
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillText(text, canvas.width / 2 - 120, canvas.height / 2 + 15);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '20px sans-serif';
+      drawMaze();
+      drawPlayers();
+      const remaining = drawTimer();
+
+      if (player1[0] === player2[0] && player1[1] === player2[1]) {
+        drawGameOver("GAME OVER");
+        return;
+      }
+
+      if (remaining <= 0) {
+        drawGameOver("TIME'S UP!");
+        return;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowUp': movePlayer(player1, 'U'); break;
+        case 'ArrowDown': movePlayer(player1, 'D'); break;
+        case 'ArrowLeft': movePlayer(player1, 'L'); break;
+        case 'ArrowRight': movePlayer(player1, 'R'); break;
+        case 'w': movePlayer(player2, 'U'); break;
+        case 's': movePlayer(player2, 'D'); break;
+        case 'a': movePlayer(player2, 'L'); break;
+        case 'd': movePlayer(player2, 'R'); break;
+      }
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
